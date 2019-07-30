@@ -10,6 +10,9 @@ import Search from 'components/search/search';
 
 export default new Router({
   routes: [{
+    path: '/',
+    redirect: '/recommend',
+  },{
   	path: '/recommend',
   	name: 'Recommend',
   	component: Recommend
