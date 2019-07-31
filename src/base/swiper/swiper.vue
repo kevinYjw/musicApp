@@ -111,6 +111,9 @@
 				this_.setSliderWidth(true);
 				this_.slider.refresh();
 			})
+		},
+		destroyed(){
+			clearTimeout(this.timer);
 		}
 	}
 </script>
