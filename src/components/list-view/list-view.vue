@@ -4,7 +4,7 @@
 			<li v-for="group in data" class="list-group" ref="listGroup">
 				<h2 class="title">{{group.title}}</h2>
 				<ul>
-					<li v-for="item in group.items" class='list-group-item flex'>
+					<li v-for="item in group.items" class='list-group-item flex' @click="backSinger(item)">
 						<img v-lazy="item.avatar" alt="">
 						<span class="name fs14">{{item.name}}</span>
 					</li>
@@ -60,9 +60,8 @@
 				if(this.scrollY > 0){
 					return '';
 				}
-				console.log(this.data[this.currentIndex],this.currentIndex)
 				return this.data[this.currentIndex] ? this.data[this.currentIndex].title : ''; 
-			}
+			},
 		},
 		methods:{
 			refresh(){
@@ -106,6 +105,9 @@
 					height += list[i].clientHeight;
 					this.listHeight.push(height);
 				}
+			},
+			backSinger(item){
+				this.$emit('toDetail',item);
 			}
 		},
 		watch:{

@@ -1,6 +1,7 @@
 <template>
 	<div class="singer">
-		<list-view :data="singerList" v-if="singerList"></list-view>
+		<list-view :data="singerList" v-if="singerList" @toDetail="toDetail"></list-view>
+		<router-view></router-view>
 	</div>
 </template>
 
@@ -8,6 +9,8 @@
 	import {getSingerList} from 'api/singer';
 	import Singer from 'common/js/singer';
 	import ListView from 'components/list-view/list-view';
+
+	import {mapMutations} from 'vuex';
 
 	export default {
 		name:'Singer',
@@ -70,10 +73,17 @@
 				ret.sort((a,b) => {
 					return a.title.charCodeAt(0) - b.title.charCodeAt(0);
 				})
-
-				console.log(hot.concat(ret))
 				return hot.concat(ret);
-			}
+			},
+			toDetail(item){
+				this.$router.push({
+					path:`/singer/${item.id}`
+				})
+				this.setSinger(item);
+			},
+			...mapMutations({
+				'setSinger':'SET_SINGER'
+			})
 		},
 		components:{
 			ListView
