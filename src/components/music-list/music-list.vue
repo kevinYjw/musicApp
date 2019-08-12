@@ -8,7 +8,7 @@
 		<div class="bg-layer" ref="bgLayer"></div>
 		<scroll :data='songs' :probeType="3" :listenScroll="true" @scroll="scroll" class='list' ref="list">
 			<div class="songs-list-wrapper">
-				<songs-list :songs="songs"></songs-list>
+				<songs-list :songs="songs" @select="selectItem"></songs-list>
 			</div>
 		</scroll>
 		<div class="loading-wrapper" v-if="songs.length <= 0">
@@ -18,6 +18,8 @@
 </template>
 
 <script>
+	import {mapActions} from 'vuex';
+
 	import Scroll from 'base/scroll/scroll';
 	import SongsList from 'base/songs-list/songs-list';
 	import {prefixStyle} from 'common/js/dom';
@@ -57,7 +59,13 @@
 			},
 			back(){
 				this.$router.back();
-			}
+			},
+			selectItem(song,index){
+				this.selectPlay({songs:this.songs,index});
+			},
+			...mapActions([
+				'selectPlay'
+			])
 		},
 		watch:{
 			scrollY(newY){
