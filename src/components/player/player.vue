@@ -23,6 +23,13 @@
 					</div>
 				</div>
 				<div class="bottom">
+					<div class="progress-wrapper flex">
+						<div class="time fs12 time-l">{{format(currentTime)}}</div>
+						<div class="progress-bar-wrapper">
+							<progress-bar :percent='percent' @percentChange="_percentChange"></progress-bar>
+						</div>
+						<div class="time fs12 time-r">{{format(currentSong.duration)}}</div>
+					</div>
 					<div class="operators flex">
 						<div class="icon i-left">
 							<i class="icon-sequence"></i>
@@ -62,7 +69,7 @@
 				</div>
 			</div>
 		</transition>
-		<audio :src="currentSong.url" ref="audio" @playing="ready" @error="error"></audio>
+		<audio :src="currentSong.url" ref="audio" @playing="ready" @error="error" @timeupdate='updateTime'></audio>
 	</div>
 </template>
 
@@ -72,6 +79,7 @@
 
 	import animations from 'create-keyframe-animation';
 	import {prefixStyle} from 'common/js/dom';
+	import ProgressBar from 'base/progress-bar/progress-bar';
 
 	const transform = prefixStyle('transform');
 	const transtion = prefixStyle('transtion');
@@ -86,7 +94,10 @@
 				return this.playing ? 'icon-pause-mini' : 'icon-play-mini';
 			},
 			cdCls(){
-				return this.playing ? 'play' : 'pause';
+				return this.playing ? 'play' : 'play pause';
+			},
+			percent(){
+				return this.currentTime / this.currentSong.duration;
 			},
 			...mapGetters([
 				'fullScreen',
@@ -98,7 +109,8 @@
 		},
 		data(){
 			return {
-				songReady:false
+				songReady:false,
+				currentTime:0,
 			}
 		},
 		methods:{
@@ -201,6 +213,21 @@
 			error(){
 				this.songReady = true;
 			},
+			updateTime(e){
+				this.currentTime = e.target.currentTime;
+			},
+			format(time){
+				time = time | 0;
+				let minute = String(time / 60 | 0).padStart(2,'0');
+				let second = String(time % 60 | 0).padStart(2,'0');
+				return `${minute}:${second}`;
+			},
+			_percentChange(percent){
+				this.$refs.audio.currentTime = this.currentSong.duration * percent;
+				if(!this.playing){
+					this.togglePlaying();
+				}
+			},
 			...mapMutations({
 				'setFullScreen':'SET_FULL_SCREEN',
 				'setPlaying':'SET_PLAYING',
@@ -219,6 +246,9 @@
 					newPlay ? audio.play() : audio.pause();
 				})
 			}
+		},
+		components:{
+			ProgressBar
 		},
 		created(){
 		}
@@ -329,6 +359,22 @@
 				position:absolute;
 				bottom:50px;
 				width:100%;
+				.progress-wrapper
+					width:80%;
+					align-items:center;
+					margin:0 auto;
+					padding:10px 0;
+					.progress-bar-wrapper
+						flex:1
+					.time
+						color:#fff;
+						width:35px;
+						flex:0 0 35px;
+						line-height:30px;
+						&.time-r
+							text-align:right;
+						&.time-l
+							text-align:left;
 				.operators
 					align-items:center;
 					.icon
