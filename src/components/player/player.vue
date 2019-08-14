@@ -32,7 +32,7 @@
 					</div>
 					<div class="operators flex">
 						<div class="icon i-left">
-							<i class="icon-sequence"></i>
+							<i :class="iconMode" @click="chooseMode"></i>
 						</div>
 						<div class="icon i-left" @click='prev'>
 							<i class="icon-prev"></i>
@@ -69,7 +69,7 @@
 				</div>
 			</div>
 		</transition>
-		<audio :src="currentSong.url" ref="audio" @playing="ready" @error="error" @timeupdate='updateTime'></audio>
+		<audio :src="currentSong.url" ref="audio" @playing="ready" @error="error" @timeupdate='updateTime' @ended="end"></audio>
 	</div>
 </template>
 
@@ -80,6 +80,8 @@
 	import animations from 'create-keyframe-animation';
 	import {prefixStyle} from 'common/js/dom';
 	import ProgressBar from 'base/progress-bar/progress-bar';
+	import {playMode} from 'common/js/config';
+	import {shuffle} from 'common/js/util';
 
 	const transform = prefixStyle('transform');
 	const transtion = prefixStyle('transtion');
@@ -99,12 +101,17 @@
 			percent(){
 				return this.currentTime / this.currentSong.duration;
 			},
+			iconMode(){
+				return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random';
+			},
 			...mapGetters([
 				'fullScreen',
 				'playList',
 				'currentSong',
 				'playing',
-				'currentIndex'
+				'currentIndex',
+				'mode',
+				'sequenceList'
 			])
 		},
 		data(){
@@ -179,6 +186,17 @@
 				this.setPlaying(!this.playing);
 				this.songReady = true;
 			},
+			end(){
+				if(this.mode === playMode.loop){
+					this.loop();
+				} else {
+					this.next();
+				}
+			},
+			loop(){
+				this.$refs.audio.currentTime = 0;
+				this.$refs.audio.play();
+			},
 			prev(){
 				if(!this.songReady){
 					return;
@@ -228,16 +246,47 @@
 					this.togglePlaying();
 				}
 			},
+			chooseMode(){
+				let mode = (this.mode + 1) % 3;
+				let list = [];
+				if(mode === playMode.sequence){
+					list = shuffle(this.sequenceList);
+				} else {
+					list = this.sequenceList;
+				}
+				console.log(list);
+				this.setMode(mode);
+				this.resetCurrentIndex(list);
+				this.setPlayList(list);
+			},
+			resetCurrentIndex(list){
+				let this_ = this;
+				let index = list.findIndex((item) => {
+					return item.id === this.currentSong.id;
+				});
+				this.setCurrentIndex(index);
+			},
+			getLyric(){
+				this.currentSong.getLyric().then((lyric) => {
+					console.log(lyric)
+				})
+			},
 			...mapMutations({
 				'setFullScreen':'SET_FULL_SCREEN',
 				'setPlaying':'SET_PLAYING',
-				'setCurrentIndex':'SET_CURRENT_INDEX'
+				'setCurrentIndex':'SET_CURRENT_INDEX',
+				'setMode':'SET_MODE',
+				'setPlayList':'SET_PLAY_LIST'
 			})
 		},
 		watch:{
-			currentSong(){
+			currentSong(newData,oldData){
+				if(newData.id === oldData.id){
+					return;
+				}
 				this.$nextTick(() => {
 					this.$refs.audio.play();
+					this.getLyric();
 				})
 			},
 			playing(newPlay){

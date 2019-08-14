@@ -4,7 +4,14 @@
 			<div class="icon-back fs22"></div>
 		</div>
 		<div class="title ellipsis fs18">{{title}}</div>
-		<div class="bgImage" :style="bgImageStyle" ref="bgImage"></div>
+		<div class="bgImage" :style="bgImageStyle" ref="bgImage">
+			<div class="play-wrapper">
+				<div class="play" @click="random">
+					<i class="icon-play"></i>
+					<span class="text fs12">随机播放全部</span>
+				</div>
+			</div>
+		</div>
 		<div class="bg-layer" ref="bgLayer"></div>
 		<scroll :data='songs' :probeType="3" :listenScroll="true" @scroll="scroll" class='list' ref="list">
 			<div class="songs-list-wrapper">
@@ -63,8 +70,13 @@
 			selectItem(song,index){
 				this.selectPlay({songs:this.songs,index});
 			},
+			random(){
+				console.log(this.songs,'1');
+				this.randomPlay({songs:this.songs});
+			},
 			...mapActions([
-				'selectPlay'
+				'selectPlay',
+				'randomPlay'
 			])
 		},
 		watch:{
@@ -136,6 +148,20 @@
 			padding-bottom:70%;
 			background-size:cover;
 			transform-origin:top;
+			.play-wrapper
+				position: absolute;
+				bottom:20px;
+				z-index:50;
+				width:100%;
+				.play
+					width:135px;
+					padding:7px 0;
+					margin:0 auto;
+					text-align:center;
+					box-sizing:border-box;
+					color:#ffcd32;
+					border:1px solid #ffcd32;
+					border-radius:100px;
 		.bg-layer
 			height:100%;
 			background-color:#222;
