@@ -12,17 +12,28 @@
 					<div class="title fs18 ellipsis">{{currentSong.name}}</div>
 					<div class="subtitle fs14">{{currentSong.singer}}</div>
 				</div>
-				<div class="middle">
-					<div class="middle-1">
+				<div class="middle" @touchstart.prevent="middleTouchStart" @touchmove.prevent="middleTouchMove" @touchend.prevent="middleTouchEnd">
+					<div class="middle-1" ref="middleL">
 						<div class="cd-wrapper" ref="cdWrapper">
 							<div class="cd" :class="cdCls"><img :src="currentSong.image" alt="" class="image"></div>
 						</div>
 						<div class="playing-lyric-wrapper">
-							<div class="playing-lyric"></div>
+							<div class="playing-lyric">{{playingLyric}}</div>
 						</div>
 					</div>
+					<scroll class="middle-r" :data="currentLyric && currentLyric.lines" ref="lyricList">
+						<div class="lyric-wrapper">
+							<div v-if="currentLyric">
+								<p class="text" ref="lyricLine" :class="currentLineNum == index ? 'active' : '' " v-for="(item,index) in currentLyric.lines">{{item.txt}}</p>
+							</div>
+						</div>
+					</scroll>
 				</div>
 				<div class="bottom">
+					<div class="dot-wrapper">
+						<span class="dot" :class='{"active":currentShow == "cd"}'></span>
+						<span class="dot" :class='{"active":currentShow == "lyric"}'></span>
+					</div>
 					<div class="progress-wrapper flex">
 						<div class="time fs12 time-l">{{format(currentTime)}}</div>
 						<div class="progress-bar-wrapper">
@@ -76,15 +87,18 @@
 <script>
 	import {mapGetters} from 'vuex';
 	import {mapMutations} from 'vuex';
+	import Lyric from 'lyric-parser';
 
 	import animations from 'create-keyframe-animation';
 	import {prefixStyle} from 'common/js/dom';
 	import ProgressBar from 'base/progress-bar/progress-bar';
 	import {playMode} from 'common/js/config';
 	import {shuffle} from 'common/js/util';
+	import Scroll from 'base/scroll/scroll';
 
 	const transform = prefixStyle('transform');
 	const transtion = prefixStyle('transtion');
+	const transitionDuration = prefixStyle('transitionDuration');
 
 	export default {
 		name:'Player',
@@ -118,6 +132,10 @@
 			return {
 				songReady:false,
 				currentTime:0,
+				currentLyric:null,
+				currentLineNum:0,
+				currentShow:'cd',
+				playingLyric:''
 			}
 		},
 		methods:{
@@ -185,6 +203,9 @@
 				}
 				this.setPlaying(!this.playing);
 				this.songReady = true;
+				if(this.currentLyric){
+					this.currentLyric.togglePlay();
+				}
 			},
 			end(){
 				if(this.mode === playMode.loop){
@@ -196,18 +217,25 @@
 			loop(){
 				this.$refs.audio.currentTime = 0;
 				this.$refs.audio.play();
+				if(this.currentLyric){
+					this.currentLyric.seek(0);
+				}
 			},
 			prev(){
 				if(!this.songReady){
 					return;
 				}
-				let index = this.currentIndex - 1;
-				if(index === -1){
-					index = this.playList.length - 1;
-				}
-				this.setCurrentIndex(index);
-				if(!this.playing){
-					this.togglePlaying();
+				if(this.playList.length == 1){
+					this.loop();
+				} else {
+					let index = this.currentIndex - 1;
+					if(index === -1){
+						index = this.playList.length - 1;
+					}
+					this.setCurrentIndex(index);
+					if(!this.playing){
+						this.togglePlaying();
+					}
 				}
 				this.songReady = true;
 			},
@@ -215,13 +243,17 @@
 				if(!this.songReady){
 					return;
 				}
-				let index = this.currentIndex + 1;
-				if(index === this.playList.length){
-					index = 0;
-				}
-				this.setCurrentIndex(index);
-				if(!this.playing){
-					this.togglePlaying();
+				if(this.playList.length == 1){
+					this.loop();
+				} else {
+					let index = this.currentIndex + 1;
+					if(index === this.playList.length){
+						index = 0;
+					}
+					this.setCurrentIndex(index);
+					if(!this.playing){
+						this.togglePlaying();
+					}
 				}
 				this.songReady = true;
 			},
@@ -241,9 +273,13 @@
 				return `${minute}:${second}`;
 			},
 			_percentChange(percent){
-				this.$refs.audio.currentTime = this.currentSong.duration * percent;
+				const currentTime = this.currentSong.duration * percent;
+				this.$refs.audio.currentTime = currentTime;
 				if(!this.playing){
 					this.togglePlaying();
+				}
+				if(this.currentLyric){
+					this.currentLyric.seek(currentTime * 1000);
 				}
 			},
 			chooseMode(){
@@ -267,9 +303,80 @@
 				this.setCurrentIndex(index);
 			},
 			getLyric(){
+				const this_ = this;
 				this.currentSong.getLyric().then((lyric) => {
-					console.log(lyric)
+					this_.currentLyric = new Lyric(lyric,this.handleLyric);
+					if(this_.playing){
+						this_.currentLyric.play()
+					}
+					console.log(this_.currentLyric);
+				}).catch(() => {
+					this_.currentLyric = null
+					this_.playingLyric = ''
+					this_.currentLineNum = 0
 				})
+			},
+			handleLyric({lineNum, txt}){
+				this.currentLineNum = lineNum;
+				if(lineNum > 5){
+					let lineEl = this.$refs.lyricLine[lineNum-5];
+					this.$refs.lyricList.scrollToElement(lineEl,1000);
+				} else {
+					this.$refs.lyricList.scrollTo(0,0,1000);
+				}
+				this.playingLyric = txt;
+			},
+			middleTouchStart(e){
+				this.touch.initiated = true;
+				const touch = e.touches[0];
+				this.touch.pageX = touch.pageX;
+				this.touch.pageY = touch.pageY;
+			},
+			middleTouchMove(e){
+				if(!this.touch.initiated){
+					return;
+				}
+				const touch = e.touches[0];
+				const deltaX = touch.pageX - this.touch.pageX;
+				const deltaY = touch.pageY - this.touch.pageY;
+				if(Math.abs(deltaY) > Math.abs(deltaX)){
+					return;
+				}
+				const left = this.currentShow === 'cd' ? 0 : -window.innerWidth;
+				const offsetWidth = Math.min(0,Math.max(-window.innerWidth,left + deltaX));
+				this.touch.percent = Math.abs(offsetWidth / window.innerWidth);
+				this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px,0,0)`;
+				this.$refs.lyricList.$el.style[transitionDuration] = 0
+				this.$refs.middleL.style.opacity = 1 - this.touch.percent
+				this.$refs.middleL.style[transitionDuration] = 0
+			},
+			middleTouchEnd(e){
+				let offsetWidth;
+      			let opacity;
+				if(this.currentShow === 'cd'){
+					if(this.touch.percent > 0.1){
+						offsetWidth = -window.innerWidth;
+						opacity = 0;
+						this.currentShow = 'lyric'
+					} else {
+						offsetWidth = 0;
+						opacity = 1;
+					}
+				} else {
+					if(this.touch.percent < 0.9){
+						offsetWidth = 0;
+						opacity = 1;
+						this.currentShow = 'cd'
+					} else {
+						offsetWidth = -window.innerWidth;
+						opacity = 0;
+					}
+				}
+				this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px,0,0)`
+				this.$refs.lyricList.$el.style[transitionDuration] = '300ms'
+				this.$refs.middleL.style.opacity = opacity
+				this.$refs.middleL.style[transitionDuration] = '300ms'
+				this.touch.initiated = false
 			},
 			...mapMutations({
 				'setFullScreen':'SET_FULL_SCREEN',
@@ -284,10 +391,13 @@
 				if(newData.id === oldData.id){
 					return;
 				}
-				this.$nextTick(() => {
+				if(this.currentLyric){
+					this.currentLyric.stop();
+				}
+				setTimeout(() => {
 					this.$refs.audio.play();
 					this.getLyric();
-				})
+				},1000)
 			},
 			playing(newPlay){
 				const audio = this.$refs.audio;
@@ -297,9 +407,11 @@
 			}
 		},
 		components:{
-			ProgressBar
+			ProgressBar,
+			Scroll
 		},
 		created(){
+			this.touch = {};
 		}
 	}
 </script>
@@ -404,10 +516,42 @@
 							height:20px;
 							line-height:20px;
 							color:rgba(255,255,255,0.5);
+							font-size:14px;
+				.middle-r
+					display:inline-block;
+					position:relative;
+					width:100%;
+					height:100%;
+					overflow:hidden;
+					.lyric-wrapper
+						width:80%;
+						margin:0 auto;
+						overflow:hidden;
+						text-align:center;
+						.text
+							line-height:32px;
+							color:rgba(255,255,255,0.5);
+							font-size:14px;
+							&.active
+								color:#fff;
 			.bottom
 				position:absolute;
 				bottom:50px;
 				width:100%;
+				.dot-wrapper
+					font-size:0;
+					text-align:center;
+					.dot
+						display:inline-block;
+						margin:0 4px;
+						width:8px;
+						height:8px;
+						border-radius:50%;
+						background-color:rgba(255,255,255,0.5);
+						&.active
+							width:20px;
+							border-radius:5px;
+							background-color:rgba(255,255,255,0.8);
 				.progress-wrapper
 					width:80%;
 					align-items:center;

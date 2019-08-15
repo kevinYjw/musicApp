@@ -6,7 +6,7 @@
 		<div class="title ellipsis fs18">{{title}}</div>
 		<div class="bgImage" :style="bgImageStyle" ref="bgImage">
 			<div class="play-wrapper">
-				<div class="play" @click="random">
+				<div class="play" @click="random" ref="playBtn">
 					<i class="icon-play"></i>
 					<span class="text fs12">随机播放全部</span>
 				</div>
@@ -15,7 +15,7 @@
 		<div class="bg-layer" ref="bgLayer"></div>
 		<scroll :data='songs' :probeType="3" :listenScroll="true" @scroll="scroll" class='list' ref="list">
 			<div class="songs-list-wrapper">
-				<songs-list :songs="songs" @select="selectItem"></songs-list>
+				<songs-list :songs="songs" @select="selectItem" ref="songsList"></songs-list>
 			</div>
 		</scroll>
 		<div class="loading-wrapper" v-if="songs.length <= 0">
@@ -31,11 +31,13 @@
 	import SongsList from 'base/songs-list/songs-list';
 	import {prefixStyle} from 'common/js/dom';
 	import Loading from 'base/loading/loading';
+	import {playlistMixin} from 'common/js/mixin';
 
 	const transform = prefixStyle('transform');
 
 	export default {
 		name:'MusicList',
+		mixins:[playlistMixin],
 		props:{
 			title:{
 				type:String,
@@ -74,6 +76,11 @@
 				console.log(this.songs,'1');
 				this.randomPlay({songs:this.songs});
 			},
+			handlePlaylist(playList){
+				const bottom = playList.length > 0 ? '60px' : '';
+				this.$refs.list.$el.style.bottom = bottom;
+				this.$refs.list.refresh();
+			},
 			...mapActions([
 				'selectPlay',
 				'randomPlay'
@@ -93,9 +100,11 @@
 					zIndex = 10;
 					this.$refs.bgImage.style['paddingBottom'] = '0';
 					this.$refs.bgImage.style['height'] = '40px';
+					this.$refs.playBtn.style.display = 'none';
 				} else {
 					this.$refs.bgImage.style['paddingBottom'] = '70%';
 					this.$refs.bgImage.style['height'] = '0';
+					this.$refs.playBtn.style.display = 'block';
 				}
 				this.$refs.bgImage.style['zIndex'] = zIndex;
 				this.$refs.bgImage.style[transform] = `scale(${scale})`

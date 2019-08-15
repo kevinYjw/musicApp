@@ -1,6 +1,6 @@
 <template>
-	<div class="singer">
-		<list-view :data="singerList" v-if="singerList" @toDetail="toDetail"></list-view>
+	<div class="singer" ref="singer">
+		<list-view :data="singerList" v-if="singerList" @toDetail="toDetail" ref="listView"></list-view>
 		<router-view></router-view>
 	</div>
 </template>
@@ -9,11 +9,13 @@
 	import {getSingerList} from 'api/singer';
 	import Singer from 'common/js/singer';
 	import ListView from 'components/list-view/list-view';
+	import {playlistMixin} from 'common/js/mixin';
 
 	import {mapMutations} from 'vuex';
 
 	export default {
 		name:'Singer',
+		mixins:[playlistMixin],
 		data(){
 			return {
 				singerList:[]
@@ -80,6 +82,12 @@
 					path:`/singer/${item.id}`
 				})
 				this.setSinger(item);
+			},
+			handlePlaylist(playList){
+				const bottom = playList.length > 0 ? '60px' : '';
+				this.$refs.singer.style.paddingBottom = bottom;
+				this.$refs.singer.style.boxSizing = 'border-box';
+				this.$refs.listView.refresh();
 			},
 			...mapMutations({
 				'setSinger':'SET_SINGER'

@@ -26,7 +26,7 @@
 			},
 			selectItem(song,index){
 				this.$emit('select',song,index);
-			}
+			},
 		}
 	}
 </script>

@@ -1,5 +1,5 @@
 <template>
-	<div class="recommend">
+	<div class="recommend" ref="recommend">
 		<scroll :data="disclist" ref="scroll" class="recommend-wrapper"> 
 			<div>
 				<div class="banner" v-if="bannerList.length > 0">
@@ -36,9 +36,11 @@
 	import Swiper from 'base/swiper/swiper';
 	import Scroll from 'base/scroll/scroll';
 	import Loading from 'base/loading/loading';
+	import {playlistMixin} from 'common/js/mixin';
 
 	export default {
 		name:'Recommend',
+		mixins:[playlistMixin],
 		data(){
 			return {
 				bannerList:[],
@@ -70,6 +72,12 @@
 						this.$refs.scroll.refresh();
 					},20)
 				}
+			},
+			handlePlaylist(playList){
+				const bottom = playList.length > 0 ? '60px' : '';
+				this.$refs.recommend.style.paddingBottom = bottom;
+				this.$refs.recommend.style.boxSizing = 'border-box';
+				this.$refs.scroll.refresh();
 			}
 		},
 		components:{
