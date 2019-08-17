@@ -8,6 +8,7 @@ const state = {
 	sequenceList:[],//顺序列表
 	mode:playMode.sequence,//播放模式
 	currentIndex:-1,//当前播放的索引
+	disc:{},//歌单数据
 }
 
 export default state;

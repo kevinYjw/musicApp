@@ -14,7 +14,7 @@
 				<div class="recommend-list">
 					<div class="title fs14">热门歌单推荐</div>
 					<ul v-if="disclist.length > 0">
-						<li v-for="item in disclist" class="item flex">
+						<li v-for="item in disclist" class="item flex" @click="toDisc(item)">
 							<div class="item-img"><img v-lazy="item.imgurl" alt="" width="60" height="60"></div>
 							<div class="text">
 								<h2 class="fs16">{{item.creator.name}}</h2>
@@ -28,6 +28,7 @@
 				<loading></loading>
 			</div>
 		</scroll>
+		<router-view></router-view>
 	</div>
 </template>
 
@@ -37,6 +38,7 @@
 	import Scroll from 'base/scroll/scroll';
 	import Loading from 'base/loading/loading';
 	import {playlistMixin} from 'common/js/mixin';
+	import {mapMutations} from 'vuex';
 
 	export default {
 		name:'Recommend',
@@ -78,7 +80,16 @@
 				this.$refs.recommend.style.paddingBottom = bottom;
 				this.$refs.recommend.style.boxSizing = 'border-box';
 				this.$refs.scroll.refresh();
-			}
+			},
+			toDisc(item){
+				this.$router.push({
+					path:`/recommend/${item.dissid}`
+				})
+				this.setDisc(item);
+			},
+			...mapMutations({
+				'setDisc':'SET_DISC'
+			})
 		},
 		components:{
 			Swiper,
