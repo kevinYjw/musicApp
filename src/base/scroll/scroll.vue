@@ -24,6 +24,10 @@
 			listenScroll:{ //是否监听滚动事件
 				type:Boolean,
 				default:false
+			},
+			pullup:{ //是否监听下拉刷新
+				type:Boolean,
+				default:false,
 			}
 		},
 		methods:{
@@ -40,6 +44,14 @@
 					let this_ = this;
 					this.scroll.on('scroll',(pos) => {
 						this_.$emit('scroll',pos);
+					})
+				}
+
+				if(this.pullup){
+					this.scroll.on('scrollEnd',(pos) => {
+						if(this.scroll.y <= (this.scroll.maxScrollY + 50)){
+							this.$emit('scrollToEnd');
+						}
 					})
 				}
 			},
